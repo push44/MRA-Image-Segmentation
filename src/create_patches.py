@@ -99,7 +99,7 @@ def main(input_path, mask_path, mask_patch_size, high_resolution_patch_size, low
 
                 # Save patches                
                 for patch, fpath in zip(patches, (config.MASK_PATCH_PATH, config.HIGH_RESOLUTION_PATCH_PATH, config.LOW_RESOLUTION_PATCH_PATH)):
-                    with open(f"{fpath}{patch_cnt}.bin", "wb") as file:
+                    with open(f"{fpath}{patch_cnt}.npy", "wb") as file:
                         np.save(file, patch)
                 
                 patch_cnt+=1
