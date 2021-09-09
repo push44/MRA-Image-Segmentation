@@ -18,6 +18,9 @@ BALANCE = 0.5
 TRAIN_BATCH_SIZE = 4
 VALID_BATCH_SIZE = 4
 
-EPOCHS = 1
+EPOCHS = 20000
+MAX_WAITING = 5
 
 MODEL_FILE = "../models/model.bin"
+TRAIN_LOSS_FILE = "../models/train_loss.npy"
+VALID_LOSS_FILE = "../models/valid_loss.npy"

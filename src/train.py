@@ -89,13 +89,26 @@ def train():
         valid_loss = validate_one_epoch(model, valid_data_loader, device)
         validation_loss.append(valid_loss)
 
+        print("======="*20)
+        print(f"Epoch: {epoch}")
+        print(f"\tTrain loss: {train_loss}")
+        print(f"\tValid loss: {valid_loss}")
+        print("======="*20)
+
         if valid_loss<best_loss:
             best_loss = valid_loss
             torch.save(model.state_dict(), config.MODEL_FILE)
-
+            waiting = 0
+        
         else:
             waiting+=1
             if waiting==config.MAX_WAITING:
+                with open(f"{config.TRAIN_LOSS_FILE}", "wb") as file:
+                    np.save(file, training_loss)
+
+                with open(f"{config.VALID_LOSS_FILE}", "wb") as file:
+                    np.save(file, validation_loss)
+
                 print("======"*20)
                 print(f"Best Loss: {round(best_loss, 5)}")
                 print("======"*20)

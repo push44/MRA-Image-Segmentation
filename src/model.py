@@ -92,7 +92,7 @@ class DeepMedic(nn.Module):
         x3 = self.dropout2(x3)
 
         x3 = F.relu(self.convf2(x3)) # size: (bs, 100, 24, 24, 24)
-        x3 = nn.BatchNorm3d(100)(x3)
+        x3 = nn.BatchNorm3data_loaderd(100)(x3)
         x3 = self.dropout2(x3)
 
         # Output (Dimmension: (bs, 1, 24, 24, 24))
@@ -101,4 +101,3 @@ class DeepMedic(nn.Module):
         # Optimization loss
         loss = dice_loss(mask_img, out_img)
         return out_img, loss
-

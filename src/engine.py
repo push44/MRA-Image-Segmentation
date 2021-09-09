@@ -1,5 +1,4 @@
 import torch
-
 from tqdm import tqdm
 
 ###################### TRAIN ######################
@@ -42,7 +41,7 @@ def validate_one_epoch(model, data_loader, device):
     model.eval()
 
     total_loss = 0
-    for data in tqdm(data_loader, total=len(data_loader)):
+    for data in data_loader:
         with torch.no_grad():
             output, loss = validate_one_step(model, data, device)
         total_loss += loss

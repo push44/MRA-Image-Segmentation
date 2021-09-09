@@ -1,9 +1,6 @@
 import torch
 import numpy as np
 
-from PIL import Image
-from torchvision import transforms
-
 def normalize_image(img, max_value, min_value):
     return ((img - img.min()) * (1/(img.max() - img.min()) * 255)).astype('uint8')
 
