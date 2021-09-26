@@ -11,7 +11,7 @@ import numpy as np
 from math import floor
 
 
-def get_training_and_testing_sets(file_list):
+def train_validation_split(file_list):
     split = 0.7
     split_index = floor(len(file_list) * split)
     training = file_list[:split_index]
@@ -20,17 +20,19 @@ def get_training_and_testing_sets(file_list):
 
 def train():
     ###################### STAGE 1 ######################
+    # Fetch train image ids
+    fnames = os.listdir(f"{config.MASK_PATCH_PATH}/train/")
 
-    # Fetch all image ids
-    fnames = os.listdir(config.MASK_PATCH_PATH)
-    
     # Lists with image locations
-    high_res_paths = list(map(lambda fname: f"{config.HIGH_RESOLUTION_PATCH_PATH}{fname}", fnames))
-    low_res_paths = list(map(lambda fname: f"{config.LOW_RESOLUTION_PATCH_PATH}{fname}", fnames))
-    mask_paths = list(map(lambda fname: f"{config.MASK_PATCH_PATH}{fname}", fnames))
+    high_res_paths = list(map(lambda fname: f"{config.HIGH_RESOLUTION_PATCH_PATH}/train/{fname}", fnames))
+    low_res_paths = list(map(lambda fname: f"{config.LOW_RESOLUTION_PATCH_PATH}/train/{fname}", fnames))
+    mask_paths = list(map(lambda fname: f"{config.MASK_PATCH_PATH}/train/{fname}", fnames))    
 
-    # Split train and validation images (locations)
-    train_paths, valid_paths = get_training_and_testing_sets(list(zip(high_res_paths, low_res_paths, mask_paths)))
+
+    # Split train and validation images (filenames)
+    # -------------------- REMOVE 100 WHEN ACTUAL TRAINING or pushing --------------------
+    path_zip_list = list(zip(high_res_paths, low_res_paths, mask_paths))[:100]
+    train_paths, valid_paths = train_validation_split(path_zip_list)
     
     # Create train and validation file locations
     high_res_train_paths = []
@@ -50,9 +52,8 @@ def train():
         mask_valid_paths.append(file[2])
 
     ###################### STAGE 2 ######################
-    
     # Train data loader
-    train_dataset = MRIDataset(high_res_train_paths, low_res_train_paths, mask_valid_paths)
+    train_dataset = MRIDataset(high_res_train_paths, low_res_train_paths, mask_train_paths)
 
     train_data_loader = torch.utils.data.DataLoader(
         dataset = train_dataset,
@@ -66,7 +67,6 @@ def train():
         dataset = valid_dataset,
         batch_size = config.VALID_BATCH_SIZE
     )
-    
     ###################### STAGE 3 ######################
 
     # Create model
@@ -75,7 +75,9 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
 
     ###################### STAGE 4 ######################
-
+    directory = "../models/"
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     best_loss = np.inf
     waiting = 0
 

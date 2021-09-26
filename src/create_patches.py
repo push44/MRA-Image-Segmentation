@@ -1,6 +1,7 @@
 import config
 
 import os
+import shutil
 import numpy as np
 
 from tqdm import tqdm
@@ -11,7 +12,7 @@ def threshold(x, y, z, image, threshold_value):
     max_threshold_output = x<image.shape[0]-threshold_value and y<image.shape[1]-threshold_value and z<image.shape[2]-threshold_value
     return min_threshold_output and max_threshold_output
 
-def create_patch(img, mask, coordinate, mask_patch_size, high_resolution_patch_size, low_resolution_crop_size, low_resolution_patch_size):
+def create_train_patch(img, mask, coordinate, mask_patch_size, high_resolution_patch_size, low_resolution_crop_size, low_resolution_patch_size):
     """Outputs patches in order: mask, high_resolution, low_resolution resized"""
     x_curr_ind, y_curr_ind, z_curr_ind = coordinate
 
@@ -40,22 +41,61 @@ def create_patch(img, mask, coordinate, mask_patch_size, high_resolution_patch_s
 
     return patches
 
+def create_filenames(filenames, path):
+    # Returns a list of filenames
+    filenames_list = list(sorted(filenames, key=lambda val: val.split("_")[0]))
+    filenames_list = list(map(lambda filename: "/".join([path, filename]), filenames_list))
+    
+    return filenames_list
 
-def main(input_path, mask_path, mask_patch_size, high_resolution_patch_size, low_resolution_crop_size, low_resolution_patch_size):
+def train_test_split(input_path, mask_path, test_portion):
+    # Returns lists of train-test image-mask filenames
+    input_fnames, mask_fnames = os.listdir(input_path), os.listdir(mask_path)
 
-    # List full path of the image files
-    image_filenames = os.listdir(input_path)
-    image_filenames = list(sorted(image_filenames, key=lambda val: val.split("_")[0]))
-    image_filenames = list(map(lambda img_filename: "/".join([input_path, img_filename]), image_filenames))
+    num_images = len(input_fnames)
+    num_test_images = int(num_images*test_portion)
+    num_train_images = 1-num_test_images
 
-    # List full path of the mask files
-    mask_filenames = os.listdir(mask_path)
-    mask_filenames = list(sorted(mask_filenames, key=lambda val: val.split("_")[0]))
-    mask_filenames = list(map(lambda mask_filename: "/".join([mask_path, mask_filename]), mask_filenames))
+    train_image_filenames = create_filenames(input_fnames[:num_train_images], input_path)
+    train_mask_filenames = create_filenames(mask_fnames[:num_train_images], mask_path)
+
+    test_image_filenames = create_filenames(input_fnames[num_train_images:], input_path)
+    test_mask_filenames = create_filenames(mask_fnames[num_train_images:], mask_path)
+
+    return train_image_filenames, test_image_filenames, train_mask_filenames, test_mask_filenames
+
+def create_train_patches(
+        samples_per_image,
+        balance,
+        mask_patch_size,
+        high_resolution_patch_size,
+        low_resolution_crop_size,
+        low_resolution_patch_size,
+        train_image_filenames,
+        train_mask_filenames,
+        mask_patch_path,
+        high_resolution_patch_path,
+        low_resolution_patch_path
+    ):
+
+    # Saves train patches
+    print("Creating train patches...")
+
+    # Create required directories
+    for directory in [mask_patch_path, high_resolution_patch_path, low_resolution_patch_path]:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        else:
+            # First remove existed
+            shutil.rmtree(directory)
+            # Create new one
+            os.makedirs(directory)
+            os.makedirs(f"{directory}/train")
+            os.makedirs(f"{directory}/test")
 
     # Calculate how many number of positive and negative patches to sample per image
-    num_positive_samples = int(config.SAMPLES_PER_IMAGE*config.BALANCE)
-    num_negative_samples = config.SAMPLES_PER_IMAGE - num_positive_samples
+    num_positive_samples = int(samples_per_image*balance)
+    num_negative_samples = samples_per_image - num_positive_samples
 
     # Calculate minimum distance away from the boundary for a sampled patch to be valid
     min_boundary_width = max(
@@ -66,7 +106,7 @@ def main(input_path, mask_path, mask_patch_size, high_resolution_patch_size, low
 
     # Iterative over image-mask pair
     patch_cnt = 0 # Patch count
-    for (img_filename, mask_filename) in tqdm(zip(image_filenames, mask_filenames), total=len(image_filenames)):
+    for (img_filename, mask_filename) in tqdm(zip(train_image_filenames, train_mask_filenames), total=len(train_image_filenames)):
 
         # Load input image and mask
         img, mask = np.load(img_filename), np.load(mask_filename)
@@ -95,23 +135,139 @@ def main(input_path, mask_path, mask_patch_size, high_resolution_patch_size, low
         for coordinate_list in (rand_sample_positive_ind, rand_sample_negative_ind):
             for coordinate in coordinate_list: # positive, negative co-ordinate list
                 # Get patches in a list in order: mask, high_resolution, low_resolution resized
-                patches = create_patch(img, mask, coordinate, mask_patch_size, high_resolution_patch_size, low_resolution_crop_size, low_resolution_patch_size)
+                patches = create_train_patch(img, mask, coordinate, mask_patch_size, high_resolution_patch_size, low_resolution_crop_size, low_resolution_patch_size)
 
-                # Save patches                
-                for patch, fpath in zip(patches, (config.MASK_PATCH_PATH, config.HIGH_RESOLUTION_PATCH_PATH, config.LOW_RESOLUTION_PATCH_PATH)):
-                    with open(f"{fpath}{patch_cnt}.npy", "wb") as file:
+                # Save patches
+                for patch, fpath in zip(patches, (mask_patch_path, high_resolution_patch_path, low_resolution_patch_path)):
+                    with open(f"{fpath}/train/{patch_cnt}.npy", "wb") as file:
                         np.save(file, patch)
                 
                 patch_cnt+=1
 
     return None
 
+def pad_image_multiple_of_output_shape(original_image, output_size=24):
+    # Pad original image to make it multiple of output shape, default to 24
+    x, y, z = original_image.shape
+    
+    xp = int(np.ceil(x/output_size)*output_size - x)
+    yp = int(np.ceil(y/output_size)*output_size - y)
+    zp = int(np.ceil(z/output_size)*output_size - z)
+    
+    return np.pad(original_image, ((0, xp), (0, yp), (0, zp)), 'constant')
+
+def pad_image_for_patches(padded_image, crop_size, output_size=24):
+    pad = (crop_size//2) - (output_size//2)
+    return np.pad(padded_image, ((pad, pad), (pad, pad), (pad, pad)), "constant")
+
+def extract_test_patches(image_name, padded_image, patch_size, fpath, output_size=24, resize=False, resize_size=None):
+    patch_cnt = 0
+    for z_start_ind in range(0, padded_image.shape[2], 24):
+        z_end_ind = z_start_ind+patch_size
+        if z_end_ind==padded_image.shape[2]:
+            break
+            
+        for x_start_ind in range(0, padded_image.shape[0], 24):
+            x_end_ind = x_start_ind+patch_size
+            if x_end_ind==padded_image.shape[0]:
+                break
+                
+            for y_start_ind in range(0, padded_image.shape[0], 24):
+                y_end_ind = y_start_ind+patch_size
+                if y_end_ind==padded_image.shape[0]:
+                    break
+                
+                patch = padded_image[x_start_ind:x_end_ind,y_start_ind:y_end_ind,z_start_ind:z_end_ind]
+
+                if resize:
+                    patch = np.resize(patch, (resize_size, resize_size, resize_size))
+
+                with open(f"{fpath}/test/{image_name}_{patch_cnt}.npy", "wb") as file:
+                    np.save(file, patch)
+
+                patch_cnt+=1
+
+    return None
+
+def create_test_patches(
+        test_image_filenames,
+        high_resolution_patch_size,
+        low_resolution_crop_size,
+        low_resolution_patch_size,
+        high_resolution_patch_path,
+        low_resolution_patch_path
+    ):
+    # Saves test patches
+    print("Creating test patches...")
+    for filename in tqdm(test_image_filenames, total=len(test_image_filenames)):
+        test_image = np.load(filename)
+        test_image = pad_image_multiple_of_output_shape(test_image)
+
+        # Extract image name
+        image_name = filename.split("/")[-1]
+
+        # Pad the padded image for high resolution
+        high_res_pad_img = pad_image_for_patches(test_image, high_resolution_patch_size)
+
+        # Extract patches for high resolution patch
+        extract_test_patches(image_name, high_res_pad_img, high_resolution_patch_size, high_resolution_patch_path, output_size=24)
+        
+        # Pad the padded image for low resolution (crop)
+        low_res_pad_img = pad_image_for_patches(test_image, low_resolution_crop_size)
+
+        # Extract patches for low resolution patch
+        extract_test_patches(image_name, low_res_pad_img, low_resolution_crop_size, low_resolution_patch_path, output_size=24, resize=True, resize_size=low_resolution_patch_size)
+
+    return None
+
+def main():
+
+    # Parameters
+    input_path = config.INPUT_PATH
+    mask_path = config.MASK_PATH
+    mask_patch_size = config.MASK_PATCH_SIZE
+    high_resolution_patch_size = config.HIGH_RESOLUTION_PATCH_SIZE
+    low_resolution_crop_size = config.LOW_RESOLUTION_CROP_SIZE
+    low_resolution_patch_size = config.LOW_RESOLUTION_PATCH_SIZE
+    test_portion = config.TEST_PORTION
+    samples_per_image = config.NUM_PATCHES
+    balance = config.BALANCE
+    mask_patch_path = config.MASK_PATCH_PATH
+    high_resolution_patch_path = config.HIGH_RESOLUTION_PATCH_PATH
+    low_resolution_patch_path = config.LOW_RESOLUTION_PATCH_PATH
+
+    # Get filenames
+    train_image_filenames, test_image_filenames, train_mask_filenames, test_mask_filenames = train_test_split(input_path, mask_path, test_portion)
+
+    # Create and save train patches
+    param_dict = {
+        "samples_per_image" : samples_per_image,
+        "balance" : balance,
+        "samples_per_image" : samples_per_image,
+        "mask_patch_size" : mask_patch_size,
+        "high_resolution_patch_size" : high_resolution_patch_size,
+        "low_resolution_crop_size" : low_resolution_crop_size,
+        "low_resolution_patch_size" : low_resolution_patch_size,
+        "train_image_filenames" : train_image_filenames,
+        "train_mask_filenames" : train_mask_filenames,
+        "mask_patch_path" : mask_patch_path,
+        "high_resolution_patch_path" : high_resolution_patch_path,
+        "low_resolution_patch_path" : low_resolution_patch_path
+    }
+    create_train_patches(**param_dict)
+
+    # Create and save test patches
+    param_dict = {
+        "test_image_filenames" : test_image_filenames,
+        "high_resolution_patch_size" : high_resolution_patch_size,
+        "low_resolution_crop_size" : low_resolution_crop_size,
+        "low_resolution_patch_size" : low_resolution_patch_size,
+        "high_resolution_patch_path" : high_resolution_patch_path,
+        "low_resolution_patch_path" : low_resolution_patch_path 
+    }
+    create_test_patches(**param_dict)
+
+    return None
+
 if __name__ == "__main__":
-    main(
-        config.INPUT_PATH,
-        config.MASK_PATH,
-        config.MASK_PATCH_SIZE,
-        config.HIGH_RESOLUTION_PATCH_SIZE,
-        config.LOW_RESOLUTION_CROP_SIZE,
-        config.LOW_RESOLUTION_PATCH_SIZE,
-    )
+    main()
