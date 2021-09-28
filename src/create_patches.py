@@ -4,6 +4,7 @@ import os
 import shutil
 import numpy as np
 
+from skimage.transform import resize
 from tqdm import tqdm
 
 def threshold(x, y, z, image, threshold_value):
@@ -37,7 +38,7 @@ def create_train_patch(img, mask, coordinate, mask_patch_size, high_resolution_p
             patches.append(img[x_start:x_end, y_start:y_end, z_start:z_end])
 
     # Resize low resolution patch
-    patches[-1] = np.resize(patches[-1], (low_resolution_patch_size, low_resolution_patch_size, low_resolution_patch_size))
+    patches[-1] = resize(patches[-1], (low_resolution_patch_size, low_resolution_patch_size, low_resolution_patch_size))
 
     return patches
 
@@ -160,27 +161,39 @@ def pad_image_for_patches(padded_image, crop_size, output_size=24):
     pad = (crop_size//2) - (output_size//2)
     return np.pad(padded_image, ((pad, pad), (pad, pad), (pad, pad)), "constant")
 
-def extract_test_patches(image_name, padded_image, patch_size, fpath, output_size=24, resize=False, resize_size=None):
+def extract_test_patches(image_name, padded_image, patch_size, fpath, output_size=24, is_resize=False, resize_size=None):
     patch_cnt = 0
+    break_z = False
+    break_x = False
+    break_y = False
     for z_start_ind in range(0, padded_image.shape[2], 24):
-        z_end_ind = z_start_ind+patch_size
-        if z_end_ind==padded_image.shape[2]:
+        if not break_z:
+            z_end_ind = z_start_ind+patch_size
+            if z_end_ind==padded_image.shape[2]:
+                break_z = True
+        else:
             break
             
         for x_start_ind in range(0, padded_image.shape[0], 24):
-            x_end_ind = x_start_ind+patch_size
-            if x_end_ind==padded_image.shape[0]:
+            if not break_x:
+                x_end_ind = x_start_ind+patch_size
+                if x_end_ind==padded_image.shape[0]:
+                    break_x = True
+            else:
                 break
                 
             for y_start_ind in range(0, padded_image.shape[0], 24):
-                y_end_ind = y_start_ind+patch_size
-                if y_end_ind==padded_image.shape[0]:
+                if not break_y:
+                    y_end_ind = y_start_ind+patch_size
+                    if y_end_ind==padded_image.shape[0]:
+                        break_y = True
+                else:
                     break
                 
                 patch = padded_image[x_start_ind:x_end_ind,y_start_ind:y_end_ind,z_start_ind:z_end_ind]
 
-                if resize:
-                    patch = np.resize(patch, (resize_size, resize_size, resize_size))
+                if is_resize:
+                    patch = resize(patch, (resize_size, resize_size, resize_size))
 
                 with open(f"{fpath}/test/{image_name}_{patch_cnt}.npy", "wb") as file:
                     np.save(file, patch)
@@ -216,7 +229,7 @@ def create_test_patches(
         low_res_pad_img = pad_image_for_patches(test_image, low_resolution_crop_size)
 
         # Extract patches for low resolution patch
-        extract_test_patches(image_name, low_res_pad_img, low_resolution_crop_size, low_resolution_patch_path, output_size=24, resize=True, resize_size=low_resolution_patch_size)
+        extract_test_patches(image_name, low_res_pad_img, low_resolution_crop_size, low_resolution_patch_path, output_size=24, is_resize=True, resize_size=low_resolution_patch_size)
 
     return None
 

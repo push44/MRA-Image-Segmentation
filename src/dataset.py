@@ -2,12 +2,6 @@ import torch
 import os
 import numpy as np
 
-def normalize_image(img, max_value, min_value):
-    if (max_value - min_value)!=0:
-        return ((img - min_value) * (1/(max_value - min_value) * 255)).astype('uint8')
-    else:
-        return img
-
 class MRIDataset:
     def __init__(self, high_res_path, low_res_path, mask_path, filenames=None):
         self.high_res_path = high_res_path
@@ -29,10 +23,8 @@ class MRIDataset:
     def __getitem__(self, item):
 
         high_res_img = np.load(self.high_res_path[item])
-        high_res_img = normalize_image(high_res_img, np.min(high_res_img), np.max(high_res_img))
 
         low_res_img = np.load(self.low_res_path[item])
-        low_res_img = normalize_image(low_res_img, np.min(low_res_img), np.max(low_res_img))
 
         if self.empty==True:
             mask_img = np.zeros(shape=(24, 24, 24))

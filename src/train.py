@@ -30,8 +30,8 @@ def train():
 
 
     # Split train and validation images (filenames)
-    # -------------------- REMOVE 100 WHEN ACTUAL TRAINING or pushing --------------------
-    path_zip_list = list(zip(high_res_paths, low_res_paths, mask_paths))[:100]
+    # -------------------- Add index to path_zip_list for prototyping --------------------
+    path_zip_list = list(zip(high_res_paths, low_res_paths, mask_paths))
     train_paths, valid_paths = train_validation_split(path_zip_list)
     
     # Create train and validation file locations
