@@ -46,7 +46,7 @@ class DeepMedic(nn.Module):
         self.upsampling = nn.Upsample(scale_factor=(4, 4, 4))
 
         # Common layers
-        self.dropout1 = nn.Dropout(0.02)
+        self.dropout1 = nn.Dropout(0.5)
         self.dropout2 = nn.Dropout(0.5)
 
         # Final convolutions

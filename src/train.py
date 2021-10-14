@@ -9,6 +9,7 @@ import torch
 import numpy as np
 
 from math import floor
+from torch.optim import lr_scheduler
 
 
 def train_validation_split(file_list):
@@ -21,8 +22,7 @@ def train_validation_split(file_list):
 def train():
     ###################### STAGE 1 ######################
     # Fetch train image ids
-    fnames = os.listdir(f"{config.MASK_PATCH_PATH}/train/")
-
+    fnames = os.listdir(f"{config.MASK_PATCH_PATH}/train/")[:50]
     # Lists with image locations
     high_res_paths = list(map(lambda fname: f"{config.HIGH_RESOLUTION_PATCH_PATH}/train/{fname}", fnames))
     low_res_paths = list(map(lambda fname: f"{config.LOW_RESOLUTION_PATCH_PATH}/train/{fname}", fnames))
@@ -72,7 +72,8 @@ def train():
     # Create model
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = DeepMedic().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-6, weight_decay=1e-5)
+    scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", patience=1, verbose=True)
 
     ###################### STAGE 4 ######################
     directory = "../models/"
@@ -90,6 +91,8 @@ def train():
 
         valid_loss = validate_one_epoch(model, valid_data_loader, device)
         validation_loss.append(valid_loss)
+
+        scheduler.step(validation_loss[-1])
 
         print("======="*20)
         print(f"Epoch: {epoch}")

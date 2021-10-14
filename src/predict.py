@@ -12,8 +12,8 @@ from engine import predict_one_epoch
 def predict():
     ###################### STAGE 1 ######################
     # Lists with image locations
-    high_res_paths = list(map(lambda fname: f"{config.HIGH_RESOLUTION_PATCH_PATH}/test/{fname}", os.listdir(f"{config.HIGH_RESOLUTION_PATCH_PATH}/test")))[:3]
-    low_res_paths = list(map(lambda fname: f"{config.LOW_RESOLUTION_PATCH_PATH}/test/{fname}", os.listdir(f"{config.LOW_RESOLUTION_PATCH_PATH}/test")))[:3]
+    high_res_paths = list(map(lambda fname: f"{config.HIGH_RESOLUTION_PATCH_PATH}/test/{fname}", os.listdir(f"{config.HIGH_RESOLUTION_PATCH_PATH}/test")))
+    low_res_paths = list(map(lambda fname: f"{config.LOW_RESOLUTION_PATCH_PATH}/test/{fname}", os.listdir(f"{config.LOW_RESOLUTION_PATCH_PATH}/test")))
     mask_paths = []
     if len(os.listdir(f"{config.MASK_PATCH_PATH}/test"))>0:
         for file in os.listdir(f"{config.MASK_PATCH_PATH}/test"):

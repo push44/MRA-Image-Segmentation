@@ -9,12 +9,12 @@ HIGH_RESOLUTION_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/high_resolut
 LOW_RESOLUTION_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/low_resolution"
 
 
-#INPUT_PATH = "../MRIData/image"
-#MASK_PATH = "../MRIData/mask"
+"""INPUT_PATH = "../MRIData/image"
+MASK_PATH = "../MRIData/mask"
 
-#MASK_PATCH_PATH = "../MRIData/patch/mask"
-#HIGH_RESOLUTION_PATCH_PATH = "../MRIData/patch/high_resolution"
-#LOW_RESOLUTION_PATCH_PATH = "../MRIData/patch/low_resolution"
+MASK_PATCH_PATH = "../MRIData/patch/mask"
+HIGH_RESOLUTION_PATCH_PATH = "../MRIData/patch/high_resolution"
+LOW_RESOLUTION_PATCH_PATH = "../MRIData/patch/low_resolution" """
 
 MASK_PATCH_SIZE = 24
 HIGH_RESOLUTION_PATCH_SIZE = 40
@@ -34,7 +34,7 @@ TEST_PORTION = 0.3
 TRAIN_BATCH_SIZE = 2
 VALID_BATCH_SIZE = 2
 
-EPOCHS = 2
+EPOCHS = 20
 MAX_WAITING = 5
 
 MODEL_FILE = "../models/model.bin"
