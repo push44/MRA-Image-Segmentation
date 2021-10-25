@@ -1,43 +1,46 @@
 import torch
 import os
+import config
 import numpy as np
 
 class MRIDataset:
-    def __init__(self, high_res_path, low_res_path, mask_path, filenames=None):
-        self.high_res_path = high_res_path
-        self.low_res_path = low_res_path
-        self.mask_path = mask_path
-        self.filenames = filenames
+    def __init__(self, filepath_dict):
+        # filepath_dict is a dictionary of lists containing filepaths of images.
+        self.filepath_dict = filepath_dict
 
-        num_files = len(self.mask_path)
-
+        # In case of test time there will not be mask files.
         self.empty=False
-        if num_files>0:
-            pass
-        else:
-            self.empty=True
+        if "mask" in self.filepath_dict.keys():
+            self.num_files = len(self.filepath_dict["mask"])
+
+            if self.num_files>0:
+                pass
+            else:
+                self.empty=True
 
     def __len__(self):
-        return len(self.high_res_path)
+        key = list(self.filepath_dict.keys())[0]
+        return len(self.filepath_dict[key])
 
     def __getitem__(self, item):
 
-        high_res_img = np.load(self.high_res_path[item])
+        return_dict = {}
+        for key in self.filepath_dict.keys():
+            if key == "mask":
+                if self.empty==True:
+                    output_shape = config.OUTPUT_SHAPE
+                    arr = np.zeros(shape=(output_shape, output_shape, output_shape))
+                else:
+                    arr = np.load(self.filepath_dict[key][item])
+                tensor = torch.unsqueeze(torch.tensor(arr, dtype=torch.float), 0)
 
-        low_res_img = np.load(self.low_res_path[item])
+            elif key == "filename":
+                tensor = self.filepath_dict[key][item]
 
-        if self.empty==True:
-            mask_img = np.zeros(shape=(24, 24, 24))
-        else:
-            mask_img = np.load(self.mask_path[item])
+            else:
+                arr = np.load(self.filepath_dict[key][item])
+                tensor = torch.unsqueeze(torch.tensor(arr, dtype=torch.float), 0)
 
-        return_dict = {
-                "high_res_img": torch.unsqueeze(torch.tensor(high_res_img, dtype=torch.float), 0),
-                "low_res_img": torch.unsqueeze(torch.tensor(low_res_img, dtype=torch.float), 0),
-                "mask_img": torch.unsqueeze(torch.tensor(mask_img, dtype=torch.float), 0)
-            }
-
-        if self.filenames!=None:
-            return_dict["filename"] = self.filenames[item]
+            return_dict[key] = tensor
 
         return return_dict
