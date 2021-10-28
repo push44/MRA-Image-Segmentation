@@ -1,6 +1,10 @@
 import torch
+
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
+
+import config
 
 def dice_loss(preds, targets):
     # credit: https://www.kaggle.com/bigironsphere/loss-function-library-keras-pytorch
@@ -59,12 +63,12 @@ class DeepMedic(nn.Module):
         self.convf3 = nn.Conv3d(in_channels=100, out_channels=1, kernel_size=1)
 
 
-    def forward(self, high_res_img, low_res_img, mask_img):
-        bs1, c1, d1, h1, w1 = high_res_img.size()
-        bs2, c2, d2, h2, w2 = low_res_img.size()
+    def forward(self, high_resolution, low_resolution, mask):
+        bs1, c1, d1, h1, w1 = high_resolution.size()
+        bs2, c2, d2, h2, w2 = low_resolution.size()
         
         # High resolution
-        x1 = F.relu(self.conv1h(high_res_img)) # size: (bs, 1, 40, 40, 40)
+        x1 = F.relu(self.conv1h(high_resolution)) # size: (bs, 1, 40, 40, 40)
         x1 = self.bn1h(x1)
         x1 = self.dropout1(x1)
 
@@ -81,7 +85,7 @@ class DeepMedic(nn.Module):
         x1 = self.dropout1(x1)
 
         # Low resolution
-        x2 = F.relu(self.conv1l(low_res_img)) # size: (bs, 1, 22, 22, 22)
+        x2 = F.relu(self.conv1l(low_resolution)) # size: (bs, 1, 22, 22, 22)
         x2 = self.bn1l(x2)
         x2 = self.dropout1(x2)
 
@@ -118,5 +122,83 @@ class DeepMedic(nn.Module):
         out_img = torch.sigmoid(self.convf3(x3)) # size: (bs, 100, 24, 24, 24)
 
         # Optimization loss
-        loss = dice_loss(mask_img, out_img)
-        return out_img, loss
+        loss = dice_loss(mask, out_img)
+        return out_img, float(loss)
+
+
+def l1_loss(x1_list, x2_list):
+    l1_loss = nn.L1Loss()
+
+    loss = 0
+    for x1_item, x2_item in zip(x1_list, x2_list):
+        loss+=l1_loss(x1_item, x2_item)
+        loss/=x1_item.numel()
+        loss*=24**3
+
+    loss/=len(x1_list)
+    return loss
+
+class Critic(nn.Module):
+    def __init__(self):
+        super(Critic, self).__init__()
+        s = 2
+        k = 4
+        n = config.OUTPUT_SHAPE
+        p = ((n-1) - n + k)//2
+
+        n1 = 64
+        n2 = 128
+        n3 = 256
+
+        self.convblock1 = nn.Conv3d(in_channels=1, out_channels=n1, kernel_size=k, stride=s, padding=p)
+        self.convblock2 = nn.Conv3d(in_channels=n1, out_channels=n2, kernel_size=k, stride=s, padding=p)
+        self.convblock3 = nn.Conv3d(in_channels=n2, out_channels=n3, kernel_size=k, stride=s, padding=p)
+
+        self.bn1 = nn.BatchNorm3d(n1)
+        self.bn2 = nn.BatchNorm3d(n2)
+
+    def forward(self, prediction_masked_image, gt_masked_image):
+
+        # Prediction mask channel
+        x1_concat = []
+        x1_concat.append(prediction_masked_image)
+
+        x1 = F.relu(self.convblock1(prediction_masked_image))
+        #print(f"Layer 1 x1:{x1.shape}")
+
+        x1_concat.append(x1)
+        x1 = self.bn1(x1)
+
+        x1 = F.relu(self.convblock2(x1))
+        #print(f"Layer 2 x1:{x1.shape}")
+
+        x1_concat.append(x1)
+        x1 = self.bn2(x1)
+
+        x1 = F.relu(self.convblock3(x1))
+        #print(f"Layer 3 x1:{x1.shape}")
+
+        x1_concat.append(x1)
+
+        # Ground truth mask channel
+        x2_concat = []
+        x2_concat.append(gt_masked_image)
+
+        x2 = F.relu(self.convblock1(gt_masked_image))
+        #print(f"Layer x2 1:{x2.shape}")
+
+        x2_concat.append(x2)
+        x2 = self.bn1(x2)
+
+        x2 = F.relu(self.convblock2(x2))
+        #print(f"Layer x2 2:{x2.shape}")
+
+        x2_concat.append(x2)
+        x2 = self.bn2(x2)
+
+        x2 = F.relu(self.convblock3(x2))
+        #print(f"Layer x2 3:{x2.shape}")
+
+        x2_concat.append(x2)
+
+        return None, l1_loss(x1_concat, x2_concat)

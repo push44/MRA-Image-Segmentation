@@ -1,5 +1,4 @@
 import torch
-import os
 import config
 import numpy as np
 
@@ -32,14 +31,14 @@ class MRIDataset:
                     arr = np.zeros(shape=(output_shape, output_shape, output_shape))
                 else:
                     arr = np.load(self.filepath_dict[key][item])
-                tensor = torch.unsqueeze(torch.tensor(arr, dtype=torch.float), 0)
+                tensor = torch.unsqueeze(torch.tensor(arr, dtype=torch.float, requires_grad=True), 0)
 
             elif key == "filename":
                 tensor = self.filepath_dict[key][item]
 
             else:
                 arr = np.load(self.filepath_dict[key][item])
-                tensor = torch.unsqueeze(torch.tensor(arr, dtype=torch.float), 0)
+                tensor = torch.unsqueeze(torch.tensor(arr, dtype=torch.float, requires_grad=True), 0)
 
             return_dict[key] = tensor
 

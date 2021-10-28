@@ -23,7 +23,13 @@ def predict():
 
     ###################### STAGE 2 ######################
     # Train data loader
-    dataset = MRIDataset(high_res_paths, low_res_paths, mask_paths, filenames)
+    filepath_dict = {
+        "high_resolution": high_res_paths,
+        "low_resolution": low_res_paths,
+        "mask": mask_paths,
+        "filename": filenames
+    }
+    dataset = MRIDataset(filepath_dict)
 
     data_loader = torch.utils.data.DataLoader(
         dataset = dataset,
