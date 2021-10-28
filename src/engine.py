@@ -6,17 +6,18 @@ def train_one_step(data, model_s, model_c, optimizer_s, optimizer_c, device):
     ######################## TRAIN CRITIC ########################
     model_c.zero_grad()
 
+    for k, v in data.items():
+        data[k] = v.to(device)
+
     image = data["image"]
     del data["image"]
 
     with torch.no_grad():
-        for k, v in data.items():
-            data[k] = v.to(device)
 
         output, _ = model_s(**data)
         output = output.cpu().detach()
 
-    prediction_masked_image = output * image.clone()
+    prediction_masked_image = output.to(device) * image.clone()
     gt_masked_image = data["mask"] * image.clone()
     data_c = {
         "prediction_masked_image": prediction_masked_image.to(device),
@@ -30,7 +31,7 @@ def train_one_step(data, model_s, model_c, optimizer_s, optimizer_c, device):
     model_s.zero_grad()
 
     output, dice_loss = model_s(**data)
-    prediction_masked_image = output * image.clone()
+    prediction_masked_image = output.to(device) * image.clone()
     gt_masked_image = data["mask"] * image.clone()
     data_c = {
         "prediction_masked_image": prediction_masked_image.to(device),
@@ -66,7 +67,7 @@ def validate_one_step(data, model_s, model_c, device):
     output, _ = model_s(**data)
     output = output.cpu().detach()
 
-    prediction_masked_image = output * image.clone()
+    prediction_masked_image = output.to(device) * image.clone()
     gt_masked_image = data["mask"] * image.clone()
     data_c = {
         "prediction_masked_image": prediction_masked_image.to(device),
