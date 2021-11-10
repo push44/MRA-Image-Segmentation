@@ -1,6 +1,7 @@
 import os
 
 ############## To create patches ##############
+"""
 FILENAMES_PATH = "/media/push44/PushDrive/MRIData"
 
 INPUT_PATH = "/media/push44/PushDrive/MRIData/image"
@@ -20,7 +21,7 @@ MASK_PATCH_PATH = "../MRIData/patch/mask"
 IMAGE_PATCH_PATH = "../MRIData/patch/image"
 HIGH_RESOLUTION_PATCH_PATH = "../MRIData/patch/high_resolution"
 LOW_RESOLUTION_PATCH_PATH = "../MRIData/patch/low_resolution"
-"""
+
 
 MASK_PATCH_SIZE = 24
 HIGH_RESOLUTION_PATCH_SIZE = 40
@@ -41,8 +42,8 @@ TEST_PORTION = 0.3
 TRAIN_BATCH_SIZE = 1
 VALID_BATCH_SIZE = 1
 
-EPOCHS = 10
-MAX_WAITING = 5
+EPOCHS = 30
+MAX_WAITING = 10
 
 MODEL_FILE = "../models/model.bin"
 TRAIN_LOSS_FILE = "../models/train_loss.npy"

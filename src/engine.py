@@ -27,6 +27,12 @@ def train_one_step(data, model_s, model_c, optimizer_s, optimizer_c, device):
     l1_loss_c.backward(retain_graph = True)
     optimizer_c.step()
 
+    bias_c = [model_c.convblock1.bias.cpu().detach()]
+    weight_c = [model_c.convblock1.weight.cpu().detach()]
+    grad_c = [model_c.convblock1.weight.grad.cpu().detach()]
+    
+    hist_c = [bias_c, weight_c, grad_c]
+
     ######################## TRAIN SEGMENTOR ########################
     model_s.zero_grad()
 
@@ -41,28 +47,28 @@ def train_one_step(data, model_s, model_c, optimizer_s, optimizer_c, device):
     l1_loss_s.backward()
     optimizer_s.step()
 
-    return l1_loss_s, dice_loss
+    return float(l1_loss_s), float(dice_loss), hist_c
 
 def train_one_epoch(model_s, optimizer_s, model_c, optimizer_c, data_loader, device):
 
     total_l1_loss = 0
     total_dice_loss = 0
     for data in tqdm(data_loader):
-        l1_loss, dice_loss = train_one_step(data, model_s, model_c, optimizer_s, optimizer_c, device)
+        l1_loss, dice_loss, hist_c = train_one_step(data, model_s, model_c, optimizer_s, optimizer_c, device)
 
         total_l1_loss+=l1_loss
         total_dice_loss+=dice_loss
 
-    return total_l1_loss/len(data_loader), total_dice_loss/len(data_loader)
+    return total_l1_loss/len(data_loader), total_dice_loss/len(data_loader), hist_c
 
 ###################### VALIDATE ######################
 def validate_one_step(data, model_s, model_c, device):
 
-    image = data["image"]
-    del data["image"]
-
     for k, v in data.items():
         data[k] = v.to(device)
+
+    image = data["image"]
+    del data["image"]
 
     output, _ = model_s(**data)
     output = output.cpu().detach()

@@ -4,16 +4,14 @@ from model import Critic, DeepMedic
 from engine import train_one_epoch
 from engine import validate_one_epoch
 
-############ REMOVE #############
-#from engine import train_one_step
-#################################
-
 import os
+import shutil
 import torch
 import numpy as np
 
 from math import floor
 from torch.optim import lr_scheduler
+from torch.utils.tensorboard import SummaryWriter
 
 
 def train_validation_split(file_list):
@@ -107,23 +105,39 @@ def train():
     directory = "../models/"
     if not os.path.exists(directory):
         os.makedirs(directory)
+    
+    if os.path.exists("./runs/"):
+        shutil.rmtree("./runs/")
+
     best_loss = np.inf
     waiting = 0
 
+    writer = SummaryWriter()
     training_l1_loss = []
     training_dice_loss = []
     validation_l1_loss = []
     #validation_dice_loss = []
     for epoch in range(config.EPOCHS):
         
-        train_l1_loss, train_dice_loss = train_one_epoch(model_s, optimizer_s, model_c, optimizer_c, train_data_loader, device)
+        train_l1_loss, train_dice_loss, hist_c = train_one_epoch(
+            model_s, optimizer_s, model_c, optimizer_c, train_data_loader, device
+        )
         training_l1_loss.append(train_l1_loss)
         training_dice_loss.append(train_dice_loss)
 
-        valid_l1_loss = validate_one_epoch(model_s, model_c, valid_data_loader, device)
+        valid_l1_loss = validate_one_epoch(
+            model_s, model_c, valid_data_loader, device
+        )
         validation_l1_loss.append(valid_l1_loss)
 
         scheduler_s.step(validation_l1_loss[-1])
+
+        writer.add_scalar("Loss/train", train_l1_loss, epoch)
+        writer.add_scalar("Loss/validation", valid_l1_loss, epoch)
+
+        writer.add_histogram("bias/critic", hist_c[0][0], epoch)
+        writer.add_histogram("weight/critic", hist_c[1][0], epoch)
+        writer.add_histogram("grad/critic", hist_c[2][0], epoch)
 
         print("======="*20)
         print(f"Epoch: {epoch+1}")
@@ -150,7 +164,8 @@ def train():
                 print(f"Best Loss: {round(best_loss, 5)}")
                 print("======"*20)
                 break
-
+    writer.flush()
+    writer.close()
     return None
 
 if __name__=="__main__":
