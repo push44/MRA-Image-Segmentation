@@ -1,7 +1,6 @@
 import os
 
 ############## To create patches ##############
-"""
 FILENAMES_PATH = "/media/push44/PushDrive/MRIData"
 
 INPUT_PATH = "/media/push44/PushDrive/MRIData/image"
@@ -11,8 +10,9 @@ MASK_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/mask"
 IMAGE_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/image"
 HIGH_RESOLUTION_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/high_resolution"
 LOW_RESOLUTION_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/low_resolution"
-"""
-FILENAMES_PATH = "../MRIData"
+
+
+"""FILENAMES_PATH = "../MRIData"
 
 INPUT_PATH = "../MRIData/image"
 MASK_PATH = "../MRIData/mask"
@@ -21,7 +21,7 @@ MASK_PATCH_PATH = "../MRIData/patch/mask"
 IMAGE_PATCH_PATH = "../MRIData/patch/image"
 HIGH_RESOLUTION_PATCH_PATH = "../MRIData/patch/high_resolution"
 LOW_RESOLUTION_PATCH_PATH = "../MRIData/patch/low_resolution"
-
+"""
 
 MASK_PATCH_SIZE = 24
 HIGH_RESOLUTION_PATCH_SIZE = 40

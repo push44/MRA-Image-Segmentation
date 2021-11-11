@@ -38,7 +38,7 @@ def train():
         low_resolution_patch_paths,
         mask_patch_paths,
         image_patch_paths
-    ))
+    ))[:50]
     train_paths, valid_paths = train_validation_split(path_zip_list)
     
     # Create train and validation file locations
@@ -119,7 +119,7 @@ def train():
     #validation_dice_loss = []
     for epoch in range(config.EPOCHS):
         
-        train_l1_loss, train_dice_loss, hist_c = train_one_epoch(
+        train_l1_loss, train_dice_loss, histogram = train_one_epoch(
             model_s, optimizer_s, model_c, optimizer_c, train_data_loader, device
         )
         training_l1_loss.append(train_l1_loss)
@@ -135,9 +135,11 @@ def train():
         writer.add_scalar("Loss/train", train_l1_loss, epoch)
         writer.add_scalar("Loss/validation", valid_l1_loss, epoch)
 
-        writer.add_histogram("bias/critic", hist_c[0][0], epoch)
-        writer.add_histogram("weight/critic", hist_c[1][0], epoch)
-        writer.add_histogram("grad/critic", hist_c[2][0], epoch)
+        for model_type in ["critic", "segmentor"]:
+            hist = histogram[model_type]
+            for type in ["bias", "weight", "grad"]:
+                for k, v in hist[type].items():
+                    writer.add_histogram(f"{type}/{model_type}/{k}", v, epoch)
 
         print("======="*20)
         print(f"Epoch: {epoch+1}")
