@@ -1,27 +1,18 @@
 import os
 
 ############## To create patches ##############
-"""
-FILENAMES_PATH = "/media/push44/PushDrive/MRIData"
+DIR_PATH = "../"
+#DIR_PATH = "/media/push44/PushDrive/MRIData"
 
-INPUT_PATH = "/media/push44/PushDrive/MRIData/image"
-MASK_PATH = "/media/push44/PushDrive/MRIData/mask"
+FILENAMES_PATH = f"{DIR_PATH}/MRIData"
 
-MASK_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/mask"
-IMAGE_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/image"
-HIGH_RESOLUTION_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/high_resolution"
-LOW_RESOLUTION_PATCH_PATH = "/media/push44/PushDrive/MRIData/patch/low_resolution"
-"""
+INPUT_PATH = f"{DIR_PATH}/image"
+MASK_PATH = f"{DIR_PATH}/mask"
 
-FILENAMES_PATH = "../MRIData"
-
-INPUT_PATH = "../MRIData/image"
-MASK_PATH = "../MRIData/mask"
-
-MASK_PATCH_PATH = "../MRIData/patch/mask"
-IMAGE_PATCH_PATH = "../MRIData/patch/image"
-HIGH_RESOLUTION_PATCH_PATH = "../MRIData/patch/high_resolution"
-LOW_RESOLUTION_PATCH_PATH = "../MRIData/patch/low_resolution"
+MASK_PATCH_PATH = f"{DIR_PATH}/patch/mask"
+IMAGE_PATCH_PATH = f"{DIR_PATH}/patch/image"
+HIGH_RESOLUTION_PATCH_PATH = f"{DIR_PATH}/patch/high_resolution"
+LOW_RESOLUTION_PATCH_PATH = f"{DIR_PATH}/patch/low_resolution"
 
 
 MASK_PATCH_SIZE = 24
@@ -43,7 +34,7 @@ TEST_PORTION = 0.3
 TRAIN_BATCH_SIZE = 1
 VALID_BATCH_SIZE = 1
 
-EPOCHS = 30
+EPOCHS = 5
 MAX_WAITING = 10
 
 MODEL_FILE = "../models/model.bin"

@@ -38,7 +38,7 @@ def train():
         low_resolution_patch_paths,
         mask_patch_paths,
         image_patch_paths
-    ))[:50]
+    ))
     train_paths, valid_paths = train_validation_split(path_zip_list)
     
     # Create train and validation file locations
@@ -99,7 +99,7 @@ def train():
     scheduler_s = lr_scheduler.ReduceLROnPlateau(optimizer_s, mode="min", patience=1, verbose=True)
 
     model_c = Critic().to(device)
-    optimizer_c = torch.optim.RMSprop(model_s.parameters(), lr=2e-4, weight_decay=0)
+    optimizer_c = torch.optim.RMSprop(model_c.parameters(), lr=2e-4, weight_decay=0)
 
     ###################### STAGE 4 ######################
     directory = "../models/"
